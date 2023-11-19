@@ -1,0 +1,28 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 2018
+  },
+  "extends": [
+    "prettier",
+    "eslint:recommended",
+    "plugin:prettier/recommended",
+    "plugin:node/recommend"
+  ],
+  "plugins": [
+    "prettier"
+  ],
+  "env": {
+    "node": true,
+    "es6": true,
+    "jest": true
+  },
+  "rules": {
+    "semi": "warn",
+    "quotes": ["warn", "single"],
+    "no-unused-vars": "warn",
+    "eqeqeq": "warn",
+    "prettier/prettier": "warn",
+    "no-console": "warn",
+    "no-var": "warn"
+  }
+}
