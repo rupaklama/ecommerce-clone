@@ -19,6 +19,16 @@ const app = express();
 
 app.use(bodyParser.urlencoded({ extended: true }));
 
+if (process.env.NODE_ENV === 'development') {
+  app.use(morgan('dev'));
+}
+
+app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET_KEY,
@@ -27,20 +37,12 @@ app.use(
   }),
 );
 
-app.use(cookieParser());
-
 // to render a pop-up message whenever a user is redirected to a particular webpage
 app.use(flash());
 
 app.engine('ejs', ejsMate);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
-
-app.use(express.static(path.join(__dirname, 'public')));
-
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-}
 
 // ROUTES
 app.use(mainRouter);
