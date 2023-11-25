@@ -27,6 +27,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// cookie parser is to read cookie data, same as request body parser above
 app.use(cookieParser());
 
 app.use(
@@ -43,6 +45,15 @@ app.use(flash());
 app.engine('ejs', ejsMate);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+app.use((req, res, next) => {
+  req.requestTime = new Date().toISOString();
+  // console.log('requestTime:', req.requestTime);
+
+  // to access all cookies in request header
+  // console.log('app.js', req.cookies);
+  next();
+});
 
 // ROUTES
 app.use(mainRouter);

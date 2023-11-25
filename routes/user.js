@@ -3,11 +3,12 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 
 const User = require('../models/userModel');
+const { protectRoute } = require('../utils/protectRoute');
 
 // NOTE: Always use 'user.save()' on authentication, not user.update
 // as a good practice to avoid bugs and data issues
 
-// generate jwt token
+// generate jwt token with signing process & payloads
 const generateToken = (id) =>
   // jwt.sign(payload, secretOrPrivateKey, [options, callback]) - create jwt
   jwt.sign({ id: id }, process.env.JWT_SECRET, {
@@ -16,38 +17,55 @@ const generateToken = (id) =>
 
 // SIGN UP
 router.post('/users/signup', async (req, res) => {
-  const { name, password, email } = req.body;
+  const { username, password, email } = req.body;
 
   try {
     const currentUser = await User.findOne({ email: req.body.email });
     if (currentUser) {
-      req.flash('errors', 'Account with that email address already exists');
-      return res.status(400).redirect('/users/signup');
+      const err = new Error('Account with that email address already exists');
+      err.status = 'fail';
+      err.statusCode = 400;
+      throw err;
     }
 
     const newUser = new User();
 
-    // jwt.sign(payload, secretOrPrivateKey, [options, callback])
-    const token = generateToken(newUser._id);
-
-    newUser.profile.name = name;
+    newUser.profile.name = username;
     newUser.password = password;
     newUser.email = email;
 
-    console.log(newUser);
-    await newUser.save();
+    await newUser.save().then((user) => {
+      // jwt.sign(payload, secretOrPrivateKey, [options, callback])
+      const token = generateToken(user._id);
 
-    // req.flash('info', 'Account created!');
-    res.status(201).json({
-      status: 'success',
-      token,
-      data: {
-        user: newUser,
-      },
+      // If everything is ok, send jwt token to client
+      const cookieOptions = {
+        // browser will delete the cookie after it expires in 7 days
+        // Converting into milli secs
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRES_IN * 24 * 60 * 60 * 1000),
+
+        // Cookie to be only send in encrypted connection - https, only works in prod
+        // secure: true,
+
+        // Cookie cannot be access or modified anyway by Browser
+        httpOnly: true,
+      };
+
+      if (process.env.NODE_ENV === 'production') cookieOptions.secure = true;
+
+      // remove the password in the response object output
+      user.password = undefined;
+
+      // Sending jwt via Cookie & storing it in cookie at the same time
+      res.cookie('jwt', token, cookieOptions);
+
+      res.redirect('/');
     });
   } catch (err) {
-    console.log('signup:', err.message);
-    return res.status(500).send({ message: 'Server error' });
+    return res.status(err.statusCode).json({
+      status: err.status,
+      message: err.message,
+    });
   }
 });
 
@@ -104,22 +122,29 @@ router.post('/users/signin', async (req, res) => {
     // remove the password in the response object output
     user.password = undefined;
 
-    // sending jwt via Cookie
+    // Sending jwt via Cookie & storing it in cookie at the same time
     res.cookie('jwt', token, cookieOptions);
 
-    res.status(200).json({
-      status: 'success',
-      token,
-      data: {
-        user,
-      },
-    });
+    res.redirect('/users/profile');
   } catch (err) {
-    res.status(err.statusCode).json({
+    return res.status(err.statusCode).json({
       status: err.status,
       message: err.message,
     });
   }
 });
+
+router.get('/users/signin', async (req, res) => {
+  res.render('accounts/signin');
+});
+
+// PROFILE
+router.get('/users/profile', protectRoute, (req, res) => {
+  console.log(req.user);
+  res.send('token found');
+});
+
+// SIGN OUT
+router.get('/users/signout', (req, res) => {});
 
 module.exports = router;
