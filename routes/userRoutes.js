@@ -47,7 +47,7 @@ router.post('/users/signup', async (req, res) => {
         // Cookie to be only send in encrypted connection - https, only works in prod
         // secure: true,
 
-        // Cookie cannot be access or modified anyway by Browser
+        // Cookie cannot be access or modified anyway by Browser - meaning we cannot modify or delete it
         httpOnly: true,
       };
 
@@ -135,16 +135,27 @@ router.post('/users/signin', async (req, res) => {
 });
 
 router.get('/users/signin', async (req, res) => {
+  if (req.cookies.jwt) return res.redirect('/');
+
   res.render('accounts/signin');
 });
 
 // PROFILE
 router.get('/users/profile', protectRoute, (req, res) => {
-  console.log(req.user);
-  res.send('token found');
+  res.render('accounts/profile', { user: req.user });
 });
 
 // SIGN OUT
-router.get('/users/signout', (req, res) => {});
+router.get('/users/logout', protectRoute, (req, res) => {
+  // note: since we set cookie as 'httpOnly: true' so that it cannot be modified or deleted
+  // The solution is to send new cookie with exact same name but without a token which will override current cookie
+  // Also, this cookie will have very short expiration time to fake like deleting a cookie.
+  res.cookie('jwt', 'fakeTokenToDeleteCurrentCookie', {
+    expires: new Date(Date.now() + 10 * 1000), // in 10 secs from now
+    httpOnly: true,
+  });
+
+  res.redirect('/');
+});
 
 module.exports = router;

@@ -12,8 +12,8 @@ const flash = require('express-flash');
 const ejs = require('ejs');
 const ejsMate = require('ejs-mate');
 
-const mainRouter = require('./routes/main');
-const userRouter = require('./routes/user');
+const mainRouter = require('./routes/mainRoutes');
+const userRouter = require('./routes/userRoutes');
 
 const app = express();
 
@@ -52,6 +52,7 @@ app.use((req, res, next) => {
 
   // to access all cookies in request header
   // console.log('app.js', req.cookies);
+
   next();
 });
 
