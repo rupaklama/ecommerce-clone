@@ -34,7 +34,7 @@ exports.protectRoute = async (req, res, next) => {
       // console.log(err);
       return res.status(401).json({
         status: 'fail',
-        message: 'Invalid token. Please login in again!',
+        message: 'Invalid token. Please login in again!', // default err.message or our custom message
       });
     }
 
